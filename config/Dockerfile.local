@@ -1,0 +1,25 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install build dependencies (commonly needed)
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Create a sample app for testing
+RUN mkdir -p /app/src/app
+RUN echo 'print("Hello from DevOps Pipeline\!")' > /app/src/app/app.py
+
+# Copy the security scanning script
+COPY scripts/security-scan.sh /app/
+RUN chmod +x /app/security-scan.sh
+
+# Set entrypoint to a simple command to show the pipeline is running
+ENTRYPOINT ["echo", "DevOps Pipeline Local Environment is ready\!"]
+EOF < /dev/null

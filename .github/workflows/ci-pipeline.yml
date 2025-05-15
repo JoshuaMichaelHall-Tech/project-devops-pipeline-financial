@@ -1,0 +1,140 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f src/app/requirements.txt ]; then pip install -r src/app/requirements.txt; fi
+          pip install flake8 pytest pytest-cov
+      
+      - name: Lint with flake8
+        run: |
+          flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 src/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      
+      - name: Run tests with pytest
+        run: |
+          pytest src/tests/ --cov=src/app --cov-report=xml
+      
+      - name: SonarQube Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        if: false  # Disabled for now as this is a template
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Run OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        if: false  # Disabled for now as this is a template
+        with:
+          project: 'Financial Application'
+          path: '.'
+          format: 'HTML'
+          out: 'reports'
+          args: >
+            --suppression ./.github/suppression.xml
+            --exclude ".git/ .github/ reports/"
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        if: false  # Disabled for now as this is a template
+        with:
+          image-ref: 'example/image:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+      
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        if: false  # Disabled for now as this is a template
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [code-quality, security-scan]
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        if: false  # Disabled for now as this is a template
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Build and tag Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./config/Dockerfile
+          push: false
+          tags: financial-app:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-to-dev:
+    name: Deploy to Dev
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    needs: build
+    environment: development
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        if: false  # Disabled for now as this is a template
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        if: false  # Disabled for now as this is a template
+      
+      - name: Terraform Init
+        run: |
+          echo "Terraform init would run here"
+      
+      - name: Terraform Apply
+        run: |
+          echo "Terraform apply would run here"
+      
+      - name: Deploy to Dev
+        run: |
+          echo "Deployment to Dev environment would run here"
+      
+      - name: Run post-deployment tests
+        run: |
+          echo "Post-deployment tests would run here"
+EOF < /dev/null
