@@ -1,6 +1,8 @@
-# Automated DevOps Pipeline for Financial Applications (IN DEVELOPMENT)
+# Automated DevOps Pipeline for Financial Applications
 
-# IN DEVELOPMENT
+## 🚧 PROJECT STATUS: IN DEVELOPMENT
+
+**Note**: This is an AI-generated project template created as part of my DevOps learning journey. Active development will begin as I progress through my CI/CD and GitHub Actions training.
 
 ## Project Overview
 
